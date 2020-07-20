@@ -22,14 +22,21 @@ func main() {
 
 	errChan := make(chan error, 10)
 
-	http.HandleFunc("/liveness", health.LivenessHandler)
-	http.HandleFunc("/readiness", health.ReadinessHandler)
-	http.HandleFunc("/face", faceHandler)
+	healthServer := http.NewServeMux()
+	healthServer.HandleFunc("/liveness", health.LivenessHandler)
+	healthServer.HandleFunc("/readiness", health.ReadinessHandler)
 	//http.HandleFunc("/health/status", HealthzStatusHandler)
 	//http.HandleFunc("/readiness/status", ReadinessStatusHandler)
 
 	go func() {
-		errChan <- http.ListenAndServe(*healthAddr, nil)
+		errChan <- http.ListenAndServe(*healthAddr, healthServer)
+	}()
+
+	httpServer := http.NewServeMux()
+	httpServer.HandleFunc("/face", faceHandler)
+
+	go func() {
+		errChan <- http.ListenAndServe(*httpAddr, httpServer)
 	}()
 
 	for {
