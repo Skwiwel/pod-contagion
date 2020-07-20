@@ -63,6 +63,7 @@ func faceHandler(w http.ResponseWriter, r *http.Request) {
 			// This Podder is infected now
 			fmt.Fprintf(w, "eww\n")
 			health.SetLivenessStatus(http.StatusTeapot)
+			log.Println("sniff")
 		case "":
 			fmt.Fprintf(w, "Do something!\n")
 		default:
