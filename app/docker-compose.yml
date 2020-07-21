@@ -1,0 +1,12 @@
+version: "3.3"
+services:
+
+  podder:
+    build:
+      context: .
+      dockerfile: ./podder/Dockerfile
+
+  starter:
+    build:
+      context: .
+      dockerfile: ./starter/Dockerfile
