@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/skwiwel/pod-contagion/health"
+	"github.com/skwiwel/pod-contagion/app/health"
 )
 
 var (

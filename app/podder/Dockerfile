@@ -1,10 +1,11 @@
 FROM golang:alpine as builder
 RUN mkdir /build 
-ADD . /build/
-WORKDIR /build 
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags "-static"' -o main .
+COPY . "/go/src/github.com/skwiwel/pod-contagion/"
+WORKDIR "/go/src/github.com/skwiwel/pod-contagion/"
+RUN ls
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags "-static"' -o /podder app/podder/main.go
 
 FROM scratch
-COPY --from=builder /build/main /app/
+COPY --from=builder /podder .
 WORKDIR /app
-CMD ["./main"]
+CMD ["/podder"]
