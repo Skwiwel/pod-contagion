@@ -9,6 +9,8 @@ import (
 	"github.com/skwiwel/pod-contagion/app/health"
 )
 
+// Podder represents the functionality of an image replica inside Kubernetes engine.
+// It's purpose is to test the Kubernetes liveness and shutdown mechanisms.
 type Podder interface {
 	Run()
 	InfectionFrenzy()
@@ -16,11 +18,12 @@ type Podder interface {
 
 type podder struct {
 	httpAddr, healthAddr string
+	health               health.Manager
 	// stopServerChan will close as a sign to close http servers
-	health         health.HealthManager
 	stopServerChan chan struct{}
 }
 
+// MakePodder is the constructor for a default Podder
 func MakePodder(httpAddr, healthAddr string) Podder {
 	p := podder{
 		httpAddr:       httpAddr,
@@ -31,6 +34,9 @@ func MakePodder(httpAddr, healthAddr string) Podder {
 	return &p
 }
 
+// Run brings the Podder to live by initiating 2 http servers:
+// one for the Kubernetes health probe handling
+// the other for listening to other Podders
 func (p *podder) Run() {
 	errChan := make(chan error, 10)
 
@@ -97,6 +103,7 @@ func (p *podder) InfectionFrenzy() {
 	if p.health.LivenessStatus() != http.StatusOK {
 		return
 	}
+	p.health.SetReadinessStatus(http.StatusTeapot)
 	p.health.SetLivenessStatus(http.StatusTeapot)
 	// close the http server
 	close(p.stopServerChan)

@@ -5,7 +5,8 @@ import (
 	"sync"
 )
 
-type HealthManager interface {
+// Manager handles the Kubernetes health status changes of an application
+type Manager interface {
 	LivenessStatus() int
 	ReadinessStatus() int
 	SetLivenessStatus(status int)
@@ -20,7 +21,8 @@ type healthStatus struct {
 	mu              sync.RWMutex
 }
 
-func MakeHealthManager() HealthManager {
+// MakeHealthManager is a constructor for HealthManager
+func MakeHealthManager() Manager {
 	hs := healthStatus{
 		livenessStatus:  http.StatusOK,
 		readinessStatus: http.StatusOK,
