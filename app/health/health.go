@@ -5,68 +5,63 @@ import (
 	"sync"
 )
 
-var (
-	livenessStatus  = http.StatusOK
-	readinessStatus = http.StatusOK
+type HealthManager interface {
+	LivenessStatus() int
+	ReadinessStatus() int
+	SetLivenessStatus(status int)
+	SetReadinessStatus(status int)
+	LivenessHandler(w http.ResponseWriter, r *http.Request)
+	ReadinessHandler(w http.ResponseWriter, r *http.Request)
+}
+
+type healthStatus struct {
+	livenessStatus  int
+	readinessStatus int
 	mu              sync.RWMutex
-)
+}
+
+func MakeHealthManager() HealthManager {
+	hs := healthStatus{
+		livenessStatus:  http.StatusOK,
+		readinessStatus: http.StatusOK,
+	}
+	return &hs
+}
 
 // LivenessStatus returns livenessStatus
-func LivenessStatus() int {
-	mu.RLock()
-	defer mu.RUnlock()
-	return livenessStatus
+func (hs *healthStatus) LivenessStatus() int {
+	hs.mu.RLock()
+	defer hs.mu.RUnlock()
+	return hs.livenessStatus
 }
 
 // ReadinessStatus returns readinessStatus
-func ReadinessStatus() int {
-	mu.RLock()
-	defer mu.RUnlock()
-	return readinessStatus
+func (hs *healthStatus) ReadinessStatus() int {
+	hs.mu.RLock()
+	defer hs.mu.RUnlock()
+	return hs.readinessStatus
 }
 
 // SetLivenessStatus sets livenessStatus
-func SetLivenessStatus(status int) {
-	mu.Lock()
-	livenessStatus = status
-	mu.Unlock()
+func (hs *healthStatus) SetLivenessStatus(status int) {
+	hs.mu.Lock()
+	hs.livenessStatus = status
+	hs.mu.Unlock()
 }
 
 // SetReadinessStatus sets readinessStatus
-func SetReadinessStatus(status int) {
-	mu.Lock()
-	readinessStatus = status
-	mu.Unlock()
+func (hs *healthStatus) SetReadinessStatus(status int) {
+	hs.mu.Lock()
+	hs.readinessStatus = status
+	hs.mu.Unlock()
 }
 
 // LivenessHandler responds to health check requests.
-func LivenessHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(LivenessStatus())
+func (hs *healthStatus) LivenessHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(hs.LivenessStatus())
 }
 
 // ReadinessHandler responds to readiness check requests.
-func ReadinessHandler(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(ReadinessStatus())
-}
-
-// LivenessStatusHandler toggles livenessStatus
-func LivenessStatusHandler(w http.ResponseWriter, r *http.Request) {
-	switch LivenessStatus() {
-	case http.StatusOK:
-		SetLivenessStatus(http.StatusServiceUnavailable)
-	case http.StatusServiceUnavailable:
-		SetLivenessStatus(http.StatusOK)
-	}
-	w.WriteHeader(http.StatusOK)
-}
-
-// ReadinessStatusHandler toggles readinessStatus
-func ReadinessStatusHandler(w http.ResponseWriter, r *http.Request) {
-	switch ReadinessStatus() {
-	case http.StatusOK:
-		SetReadinessStatus(http.StatusServiceUnavailable)
-	case http.StatusServiceUnavailable:
-		SetReadinessStatus(http.StatusOK)
-	}
-	w.WriteHeader(http.StatusOK)
+func (hs *healthStatus) ReadinessHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(hs.ReadinessStatus())
 }

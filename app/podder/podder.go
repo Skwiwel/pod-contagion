@@ -12,6 +12,7 @@ import (
 type Podder struct {
 	httpAddr, healthAddr string
 	// stopServerChan will close as a sign to close http servers
+	health         health.HealthManager
 	stopServerChan chan struct{}
 }
 
@@ -19,6 +20,7 @@ func MakePodder(httpAddr, healthAddr string) *Podder {
 	p := Podder{
 		httpAddr:       httpAddr,
 		healthAddr:     healthAddr,
+		health:         health.MakeHealthManager(),
 		stopServerChan: make(chan struct{}),
 	}
 	return &p
@@ -28,8 +30,8 @@ func (p *Podder) Run() {
 	errChan := make(chan error, 10)
 
 	healthMux := http.NewServeMux()
-	healthMux.HandleFunc("/liveness", health.LivenessHandler)
-	healthMux.HandleFunc("/readiness", health.ReadinessHandler)
+	healthMux.HandleFunc("/liveness", p.health.LivenessHandler)
+	healthMux.HandleFunc("/readiness", p.health.ReadinessHandler)
 	healthServer := &http.Server{Addr: p.healthAddr, Handler: healthMux}
 
 	go func() {
@@ -87,10 +89,10 @@ func (p *Podder) faceHandler(w http.ResponseWriter, r *http.Request) {
 // InfectionFrenzy makes the Podder respond negatively to Kubernetes
 // liveness probes and begins sneezing at other Podders
 func (p *Podder) InfectionFrenzy() {
-	if health.LivenessStatus() != http.StatusOK {
+	if p.health.LivenessStatus() != http.StatusOK {
 		return
 	}
-	health.SetLivenessStatus(http.StatusTeapot)
+	p.health.SetLivenessStatus(http.StatusTeapot)
 	// close the http server
 	close(p.stopServerChan)
 	// sneeze on some Podders
