@@ -9,15 +9,20 @@ import (
 	"github.com/skwiwel/pod-contagion/app/health"
 )
 
-type Podder struct {
+type Podder interface {
+	Run()
+	InfectionFrenzy()
+}
+
+type podder struct {
 	httpAddr, healthAddr string
 	// stopServerChan will close as a sign to close http servers
 	health         health.HealthManager
 	stopServerChan chan struct{}
 }
 
-func MakePodder(httpAddr, healthAddr string) *Podder {
-	p := Podder{
+func MakePodder(httpAddr, healthAddr string) Podder {
+	p := podder{
 		httpAddr:       httpAddr,
 		healthAddr:     healthAddr,
 		health:         health.MakeHealthManager(),
@@ -26,7 +31,7 @@ func MakePodder(httpAddr, healthAddr string) *Podder {
 	return &p
 }
 
-func (p *Podder) Run() {
+func (p *podder) Run() {
 	errChan := make(chan error, 10)
 
 	healthMux := http.NewServeMux()
@@ -60,7 +65,7 @@ func (p *Podder) Run() {
 	}
 }
 
-func (p *Podder) faceHandler(w http.ResponseWriter, r *http.Request) {
+func (p *podder) faceHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":
 		// Call ParseForm() to parse the raw query and update r.PostForm and r.Form.
@@ -88,7 +93,7 @@ func (p *Podder) faceHandler(w http.ResponseWriter, r *http.Request) {
 
 // InfectionFrenzy makes the Podder respond negatively to Kubernetes
 // liveness probes and begins sneezing at other Podders
-func (p *Podder) InfectionFrenzy() {
+func (p *podder) InfectionFrenzy() {
 	if p.health.LivenessStatus() != http.StatusOK {
 		return
 	}
@@ -106,7 +111,7 @@ func (p *Podder) InfectionFrenzy() {
 // it will sneeze on the address of it's face.
 // Kubernetes' load balancing service should ensure that whatever
 // the number of Podders, they will get sneezed on an equal amount.
-func (p *Podder) sneeze() {
+func (p *podder) sneeze() {
 	formData := url.Values{
 		"action": {"achoo"},
 	}
