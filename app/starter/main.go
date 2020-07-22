@@ -20,11 +20,11 @@ func main() {
 	go func() {
 		p.Run()
 	}()
-	time.Sleep(10 * time.Second)
-	p.InfectionFrenzy()
 
-	// Blocks the starter's main routine.
-	// It should soon be shutdown by Kubernetes.
-	block := make(chan struct{})
-	<-block
+	time.Sleep(10 * time.Second)
+	go p.InfectionFrenzy()
+
+	// Let the frenzy run for some time
+	time.Sleep(2 * time.Second)
+	// Shutdown
 }

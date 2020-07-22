@@ -15,6 +15,7 @@ spec:
       containers:
         - name: podder
           image: "skwiwel/pod-contagion:generic"
+          imagePullPolicy: Always
           args:
             - "-http=0.0.0.0:80"
             - "-health=0.0.0.0:81"

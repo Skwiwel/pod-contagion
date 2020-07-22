@@ -17,6 +17,6 @@ spec:
         - name: health
           containerPort: 81
       resources:
-        limits:
-          cpu: 0.1
-          memory: "10Mi"
+          limits:
+            cpu: 0.01
+            memory: "10Mi"
