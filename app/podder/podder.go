@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 
 	"github.com/skwiwel/pod-contagion/app/health"
 )
@@ -17,17 +18,32 @@ type Podder interface {
 }
 
 type podder struct {
-	httpAddr, healthAddr string
-	health               health.Manager
+	httpAddr, healthAddr, serviceAddr string
+	health                            health.Manager
 	// stopServerChan will close as a sign to close http servers
 	stopServerChan chan struct{}
 }
 
 // MakePodder is the constructor for a default Podder
 func MakePodder(httpAddr, healthAddr string) Podder {
+	// Try to obtain the kubernetes service address
+	// It should be located in an environment variable
+	var serviceAddr string
+	tempAddr := os.Getenv("PODDER_SERVICE_HOST")
+	tempPort := os.Getenv("PODDER_SERVICE_PORT")
+	if tempAddr != "" && tempPort != "" {
+		serviceAddr = fmt.Sprintf("%s:%s", tempAddr, tempPort)
+	} else {
+		// If there is no such env variable then just assume it's the http address.
+		// The Podder will likely not be able to communicate with others, though.
+		log.Println("could not acquire service address; assuming http address")
+		serviceAddr = httpAddr
+	}
+
 	p := podder{
 		httpAddr:       httpAddr,
 		healthAddr:     healthAddr,
+		serviceAddr:    serviceAddr,
 		health:         health.MakeHealthManager(),
 		stopServerChan: make(chan struct{}),
 	}
@@ -122,7 +138,7 @@ func (p *podder) sneeze() {
 	formData := url.Values{
 		"action": {"achoo"},
 	}
-	resp, err := http.PostForm(fmt.Sprintf("http://%s/face", p.httpAddr), formData)
+	resp, err := http.PostForm(fmt.Sprintf("http://%s/face", p.serviceAddr), formData)
 	if err != nil {
 		log.Printf("could not sneeze: %v\n", err)
 		return
