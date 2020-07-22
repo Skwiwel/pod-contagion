@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"time"
 
 	"github.com/skwiwel/pod-contagion/app/health"
 )
@@ -124,7 +125,8 @@ func (p *podder) InfectionFrenzy() {
 	// close the http server
 	close(p.stopServerChan)
 	// sneeze on some Podders
-	for i := 0; i < 10; i++ {
+	for {
+		time.Sleep(500 * time.Millisecond)
 		go p.sneeze()
 	}
 }
