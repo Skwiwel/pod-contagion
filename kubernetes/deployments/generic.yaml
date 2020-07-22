@@ -1,9 +1,12 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: podder
- spec:
+  name: generic
+spec:
   replicas: 10
+  selector:
+    matchLabels:
+      app: podder
   template:
     metadata:
       labels:
@@ -11,7 +14,10 @@ metadata:
     spec:
       containers:
         - name: podder
-          image: "skwiwel/podder:latest"
+          image: "skwiwel/pod-contagion:generic"
+          args:
+            - "-http=0.0.0.0:80"
+            - "-health=0.0.0.0:81"
           ports:
             - name: http
               containerPort: 80
@@ -19,20 +25,20 @@ metadata:
               containerPort: 81
           resources:
             limits:
-              cpu: 0.1
+              cpu: 0.01
               memory: "10Mi"
           livenessProbe:
             httpGet:
               path: /liveness
               port: 81
               scheme: HTTP
-            initialDelaySeconds: 5
-            periodSeconds: 15
-            timeoutSeconds: 5
+            initialDelaySeconds: 1
+            periodSeconds: 1
+            timeoutSeconds: 1
           readinessProbe:
             httpGet:
               path: /readiness
               port: 81
               scheme: HTTP
-            initialDelaySeconds: 5
+            initialDelaySeconds: 1
             timeoutSeconds: 1

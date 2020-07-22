@@ -3,11 +3,11 @@ kind: Pod
 metadata:
   name: starter
   labels:
-    app: starter
+    app: podder
 spec:
   containers:
     - name: starter
-      image: skwiwel/starter:latest
+      image: skwiwel/pod-contagion:starter
       args:
         - "-http=0.0.0.0:80"
         - "-health=0.0.0.0:81"
