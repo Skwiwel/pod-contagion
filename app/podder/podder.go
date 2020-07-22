@@ -74,6 +74,8 @@ func (p *podder) Run() {
 		errChan <- httpServer.ListenAndServe()
 	}()
 
+	log.Printf("Podder operational.\n")
+
 	for {
 		select {
 		case <-p.stopServerChan:
@@ -142,7 +144,8 @@ func (p *podder) sneeze() {
 	}
 	resp, err := http.PostForm(fmt.Sprintf("http://%s/face", p.serviceAddr), formData)
 	if err != nil {
-		log.Printf("could not sneeze: %v\n", err)
+		// The log spam is atrocious, so better to disable this logging.
+		//log.Printf("could not sneeze: %v\n", err)
 		return
 	}
 	defer resp.Body.Close()

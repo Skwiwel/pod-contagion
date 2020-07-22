@@ -8,6 +8,7 @@ spec:
   containers:
     - name: starter
       image: skwiwel/pod-contagion:starter
+      imagePullPolicy: Always
       args:
         - "-http=0.0.0.0:80"
         - "-health=0.0.0.0:81"
@@ -20,3 +21,4 @@ spec:
           limits:
             cpu: 0.01
             memory: "10Mi"
+  restartPolicy: Never
