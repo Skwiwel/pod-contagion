@@ -24,6 +24,7 @@ type podder struct {
 	httpAddr, healthAddr string
 	serviceAddr          string
 	health               health.Manager
+	symptomDelay         time.Duration
 	healthDelay          time.Duration
 	sneezeInterval       time.Duration
 	// stopServerChan will close as a sign to close http servers
@@ -35,7 +36,7 @@ type podder struct {
 
 // MakePodder is the constructor for a default Podder
 // sneezeTimeInterval is time in milliseconds
-func MakePodder(httpAddr, healthAddr string, healthDelay, sneezeInterval int) Podder {
+func MakePodder(httpAddr, healthAddr string, symptomDelay, healthDelay, sneezeInterval int) Podder {
 	// Try to obtain the kubernetes service address
 	// It should be located in an environment variable
 	var serviceAddr string
@@ -55,6 +56,7 @@ func MakePodder(httpAddr, healthAddr string, healthDelay, sneezeInterval int) Po
 		healthAddr:     healthAddr,
 		serviceAddr:    serviceAddr,
 		health:         health.MakeHealthManager(),
+		symptomDelay:   time.Duration(symptomDelay) * time.Millisecond,
 		healthDelay:    time.Duration(healthDelay) * time.Millisecond,
 		sneezeInterval: time.Duration(sneezeInterval) * time.Millisecond,
 		stopServerChan: make(chan struct{}),
@@ -109,7 +111,7 @@ func (p *podder) faceHandler(w http.ResponseWriter, r *http.Request) {
 	case "POST":
 		// Call ParseForm() to parse the raw query and update r.PostForm and r.Form.
 		if err := r.ParseForm(); err != nil {
-			fmt.Fprintf(w, "ParseForm() err: %v", err)
+			fmt.Fprintf(w, "could not parse http POST form: %v", err)
 			return
 		}
 
@@ -117,8 +119,9 @@ func (p *podder) faceHandler(w http.ResponseWriter, r *http.Request) {
 		case "achoo":
 			// This Podder is infected now
 			fmt.Fprintf(w, "eww\n")
-			go p.InfectionFrenzy()
 			go func() {
+				time.Sleep(p.symptomDelay)
+				go p.InfectionFrenzy()
 				time.Sleep(p.healthDelay)
 				p.health.SetLivenessStatus(http.StatusTeapot)
 				p.health.SetReadinessStatus(http.StatusTeapot)
@@ -149,13 +152,15 @@ func (p *podder) InfectionFrenzy() {
 
 	log.Println("sniff")
 	// wait for the http server to reply
-	time.Sleep(100 * time.Millisecond)
+	if p.symptomDelay < 100*time.Millisecond {
+		time.Sleep(100 * time.Millisecond)
+	}
 	// close the http server
 	close(p.stopServerChan)
 	// sneeze on some Podders
 	for {
-		time.Sleep(p.sneezeInterval)
 		go p.sneeze()
+		time.Sleep(p.sneezeInterval)
 	}
 }
 
