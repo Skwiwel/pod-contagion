@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/skwiwel/pod-contagion/app/health"
@@ -23,14 +24,18 @@ type podder struct {
 	httpAddr, healthAddr string
 	serviceAddr          string
 	health               health.Manager
+	healthDelay          time.Duration
 	sneezeInterval       time.Duration
 	// stopServerChan will close as a sign to close http servers
 	stopServerChan chan struct{}
+	// these ensure only one infection frenzy is occuring
+	frenzying bool
+	fMu       sync.Mutex
 }
 
 // MakePodder is the constructor for a default Podder
 // sneezeTimeInterval is time in milliseconds
-func MakePodder(httpAddr, healthAddr string, sneezeInterval int) Podder {
+func MakePodder(httpAddr, healthAddr string, healthDelay, sneezeInterval int) Podder {
 	// Try to obtain the kubernetes service address
 	// It should be located in an environment variable
 	var serviceAddr string
@@ -50,6 +55,7 @@ func MakePodder(httpAddr, healthAddr string, sneezeInterval int) Podder {
 		healthAddr:     healthAddr,
 		serviceAddr:    serviceAddr,
 		health:         health.MakeHealthManager(),
+		healthDelay:    time.Duration(healthDelay) * time.Millisecond,
 		sneezeInterval: time.Duration(sneezeInterval) * time.Millisecond,
 		stopServerChan: make(chan struct{}),
 	}
@@ -111,10 +117,12 @@ func (p *podder) faceHandler(w http.ResponseWriter, r *http.Request) {
 		case "achoo":
 			// This Podder is infected now
 			fmt.Fprintf(w, "eww\n")
-			if prevStatus := p.health.SetLivenessStatus(http.StatusTeapot); prevStatus == http.StatusOK {
-				go p.InfectionFrenzy()
-			}
-			p.health.SetReadinessStatus(http.StatusTeapot)
+			go p.InfectionFrenzy()
+			go func() {
+				time.Sleep(p.healthDelay)
+				p.health.SetLivenessStatus(http.StatusTeapot)
+				p.health.SetReadinessStatus(http.StatusTeapot)
+			}()
 		case "":
 			fmt.Fprintf(w, "Do something!\n")
 		default:
@@ -129,8 +137,19 @@ func (p *podder) faceHandler(w http.ResponseWriter, r *http.Request) {
 // InfectionFrenzy makes the Podder respond negatively to Kubernetes
 // liveness probes and begins sneezing at other Podders
 func (p *podder) InfectionFrenzy() {
-	time.Sleep(200 * time.Millisecond)
+	// check if can go on frenzying
+	p.fMu.Lock()
+	if p.frenzying {
+		// already frenzying
+		p.fMu.Unlock()
+		return
+	}
+	p.frenzying = true
+	p.fMu.Unlock()
+
 	log.Println("sniff")
+	// wait for the http server to reply
+	time.Sleep(100 * time.Millisecond)
 	// close the http server
 	close(p.stopServerChan)
 	// sneeze on some Podders
