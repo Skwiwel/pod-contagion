@@ -107,10 +107,10 @@ func (p *podder) faceHandler(w http.ResponseWriter, r *http.Request) {
 		case "achoo":
 			// This Podder is infected now
 			fmt.Fprintf(w, "eww\n")
-			//p.health.SetReadinessStatus(http.StatusTeapot)
 			if prevStatus := p.health.SetLivenessStatus(http.StatusTeapot); prevStatus == http.StatusOK {
 				go p.InfectionFrenzy()
 			}
+			p.health.SetReadinessStatus(http.StatusTeapot)
 		case "":
 			fmt.Fprintf(w, "Do something!\n")
 		default:
@@ -131,7 +131,7 @@ func (p *podder) InfectionFrenzy() {
 	close(p.stopServerChan)
 	// sneeze on some Podders
 	for {
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(700 * time.Millisecond)
 		go p.sneeze()
 	}
 }
