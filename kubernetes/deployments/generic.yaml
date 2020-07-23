@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: generic
 spec:
-  replicas: 10
+  replicas: 50
   selector:
     matchLabels:
       app: podder
@@ -19,6 +19,8 @@ spec:
           args:
             - "-http=0.0.0.0:80"
             - "-health=0.0.0.0:81"
+            - "-healthDelay=500"
+            - "-sneezeInterval=500"
           ports:
             - name: http
               containerPort: 80
