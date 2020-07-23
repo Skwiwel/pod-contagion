@@ -9,14 +9,16 @@ import (
 )
 
 var (
-	httpAddr   = flag.String("http", "0.0.0.0:80", "HTTP service address.")
-	healthAddr = flag.String("health", "0.0.0.0:81", "Health service address.")
+	httpAddr       = flag.String("http", "0.0.0.0:80", "HTTP service address.")
+	healthAddr     = flag.String("health", "0.0.0.0:81", "Health service address.")
+	sneezeInterval = flag.Int("sneezeInterval", 700, `The time intrval between sneezes. 
+		The amount of sneezes will depend on how fast the container is killed.`)
 )
 
 func main() {
 	flag.Parse()
 
-	p := podder.MakePodder(*httpAddr, *healthAddr)
+	p := podder.MakePodder(*httpAddr, *healthAddr, *sneezeInterval)
 	go func() {
 		p.Run()
 	}()

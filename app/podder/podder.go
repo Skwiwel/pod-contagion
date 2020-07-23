@@ -20,14 +20,17 @@ type Podder interface {
 }
 
 type podder struct {
-	httpAddr, healthAddr, serviceAddr string
-	health                            health.Manager
+	httpAddr, healthAddr string
+	serviceAddr          string
+	health               health.Manager
+	sneezeInterval       time.Duration
 	// stopServerChan will close as a sign to close http servers
 	stopServerChan chan struct{}
 }
 
 // MakePodder is the constructor for a default Podder
-func MakePodder(httpAddr, healthAddr string) Podder {
+// sneezeTimeInterval is time in milliseconds
+func MakePodder(httpAddr, healthAddr string, sneezeInterval int) Podder {
 	// Try to obtain the kubernetes service address
 	// It should be located in an environment variable
 	var serviceAddr string
@@ -38,7 +41,7 @@ func MakePodder(httpAddr, healthAddr string) Podder {
 	} else {
 		// If there is no such env variable then just assume it's the http address.
 		// The Podder will likely not be able to communicate with others, though.
-		log.Println("could not acquire service address; assuming http address")
+		log.Println("could not acquire Kubernetes service address; assuming http address")
 		serviceAddr = httpAddr
 	}
 
@@ -47,6 +50,7 @@ func MakePodder(httpAddr, healthAddr string) Podder {
 		healthAddr:     healthAddr,
 		serviceAddr:    serviceAddr,
 		health:         health.MakeHealthManager(),
+		sneezeInterval: time.Duration(sneezeInterval) * time.Millisecond,
 		stopServerChan: make(chan struct{}),
 	}
 	return &p
@@ -131,7 +135,7 @@ func (p *podder) InfectionFrenzy() {
 	close(p.stopServerChan)
 	// sneeze on some Podders
 	for {
-		time.Sleep(700 * time.Millisecond)
+		time.Sleep(p.sneezeInterval)
 		go p.sneeze()
 	}
 }
