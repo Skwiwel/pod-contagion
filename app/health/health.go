@@ -9,8 +9,8 @@ import (
 type Manager interface {
 	LivenessStatus() int
 	ReadinessStatus() int
-	SetLivenessStatus(status int)
-	SetReadinessStatus(status int)
+	SetLivenessStatus(status int) int
+	SetReadinessStatus(status int) int
 	LivenessHandler(w http.ResponseWriter, r *http.Request)
 	ReadinessHandler(w http.ResponseWriter, r *http.Request)
 }
@@ -44,18 +44,22 @@ func (hs *healthStatus) ReadinessStatus() int {
 	return hs.readinessStatus
 }
 
-// SetLivenessStatus sets livenessStatus
-func (hs *healthStatus) SetLivenessStatus(status int) {
+// SetLivenessStatus sets livenessStatus and returns the previous status
+func (hs *healthStatus) SetLivenessStatus(status int) int {
 	hs.mu.Lock()
+	prevStatus := hs.livenessStatus
 	hs.livenessStatus = status
-	hs.mu.Unlock()
+	defer hs.mu.Unlock()
+	return prevStatus
 }
 
-// SetReadinessStatus sets readinessStatus
-func (hs *healthStatus) SetReadinessStatus(status int) {
+// SetReadinessStatus sets readinessStatus and returns the previous status
+func (hs *healthStatus) SetReadinessStatus(status int) int {
 	hs.mu.Lock()
+	prevStatus := hs.readinessStatus
 	hs.readinessStatus = status
-	hs.mu.Unlock()
+	defer hs.mu.Unlock()
+	return prevStatus
 }
 
 // LivenessHandler responds to health check requests.
