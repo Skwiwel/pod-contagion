@@ -1,6 +1,7 @@
 package podder
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -79,11 +80,14 @@ func (p *podder) Run() {
 	for {
 		select {
 		case <-p.stopServerChan:
-			if err := httpServer.Close(); err != nil {
-				log.Printf("error on closing: %v\n", err)
+			ctx, cancel := context.WithTimeout(context.Background(), 1000*time.Millisecond)
+			defer cancel()
+			if err := httpServer.Shutdown(ctx); err != nil {
+				//log.Printf("error on http shutdown: %v\n", err)
 			}
+			p.stopServerChan = nil
 		case err := <-errChan:
-			if err != nil {
+			if err != nil && err.Error() != "http: Server closed" {
 				log.Println(err)
 			}
 		}
@@ -103,8 +107,10 @@ func (p *podder) faceHandler(w http.ResponseWriter, r *http.Request) {
 		case "achoo":
 			// This Podder is infected now
 			fmt.Fprintf(w, "eww\n")
-			log.Println("sniff")
-			p.InfectionFrenzy()
+			//p.health.SetReadinessStatus(http.StatusTeapot)
+			if prevStatus := p.health.SetLivenessStatus(http.StatusTeapot); prevStatus == http.StatusOK {
+				go p.InfectionFrenzy()
+			}
 		case "":
 			fmt.Fprintf(w, "Do something!\n")
 		default:
@@ -119,11 +125,8 @@ func (p *podder) faceHandler(w http.ResponseWriter, r *http.Request) {
 // InfectionFrenzy makes the Podder respond negatively to Kubernetes
 // liveness probes and begins sneezing at other Podders
 func (p *podder) InfectionFrenzy() {
-	if p.health.LivenessStatus() != http.StatusOK {
-		return
-	}
-	p.health.SetReadinessStatus(http.StatusTeapot)
-	p.health.SetLivenessStatus(http.StatusTeapot)
+	time.Sleep(200 * time.Millisecond)
+	log.Println("sniff")
 	// close the http server
 	close(p.stopServerChan)
 	// sneeze on some Podders
