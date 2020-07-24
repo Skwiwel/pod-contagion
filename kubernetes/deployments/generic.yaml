@@ -19,8 +19,9 @@ spec:
           args:
             - "-http=0.0.0.0:80"
             - "-health=0.0.0.0:81"
-            - "-healthDelay=500"
-            - "-sneezeInterval=500"
+            - "-symptomDelay=10000"
+            - "-healthDelay=0"
+            - "-sneezeInterval=600"
           ports:
             - name: http
               containerPort: 80
@@ -35,7 +36,7 @@ spec:
               path: /liveness
               port: 81
               scheme: HTTP
-            initialDelaySeconds: 1
+            initialDelaySeconds: 0
             periodSeconds: 1
             timeoutSeconds: 1
           readinessProbe:
@@ -43,5 +44,6 @@ spec:
               path: /readiness
               port: 81
               scheme: HTTP
-            initialDelaySeconds: 1
+            initialDelaySeconds: 0
+            periodSeconds: 1
             timeoutSeconds: 1
