@@ -20,7 +20,7 @@ To run the experiment:
 2. Run `kubectl create -f kubernetes/services/podder.yaml` or create the service some other way. It's important the service is created first so that the podders know where to sneeze (an env variable containing the address is created inside the container).
 3. Run `kubectl create -f kubernetes/deployments/generic.yaml` to create the `generic` pod deployments. By default this creates 50 image replicas but that number may be quite taxing depending on the machine or cloud service. Please adjust the `.yaml` first to make sure the podders can easily be handled.
 4. Wait for all the podders to get created and running. Check with `kubectl get pods` for example.
-5. Either deploy the `starter` with `kubectl create -f kubernetes/pods/starter.yaml` or send a POST HTTP request with a body of `x-www-form-urlencoded` containing an `action: achoo` field (I recommend the [Postman app](https://www.postman.com/)). Some poor podder will reply accordingly if the request is succesfully received.
+5. Either deploy the `starter` with `kubectl create -f kubernetes/pods/starter.yaml` or send a POST HTTP request with a body of `x-www-form-urlencoded` containing an `action: achoo` field at address `<kubernetes-node-external-IP>:80` (I recommend the [Postman app](https://www.postman.com/) for testing web apps). Some poor podder will reply accordingly if the request is succesfully received.
 6. Keep checking what is going on with the podders. Unfortunately I haven't found a simple and good method of gathering logs from a big number of infinitely restarting pods. The easiest way to check the contagion spread is by calling `kubectl get pods` and analyzing the current `RUNNING` and `READY` statuses along with the `RESTARTS` count.
 
 ## Experiment Results
