@@ -1,5 +1,5 @@
 # Pod Contagion
-Pod Contagion is an experiment in abusing Kubernetes' container deployment mechanisms. The project tries to create a chain of forever spreading "infection" - a chain spreading multiple generations of pods.
+Pod Contagion is an experiment in abusing Kubernetes' container deployment mechanisms. The project tries to create a chain of forever spreading "infection" - a chain spanning multiple generations of pods.
 
 I've used this project as my own intro to Go and as an opportunity to learn some more about Kubernetes. As such the code may be a bit more messy than it needs to be and compatibility with some environments may be limited.
 
