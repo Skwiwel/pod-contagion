@@ -30,8 +30,8 @@ type podder struct {
 	// stopServerChan will close as a sign to close http servers
 	stopServerChan chan struct{}
 	// these ensure only one infection frenzy is occuring
-	frenzying bool
-	fMu       sync.Mutex
+	infected bool
+	iMux     sync.Mutex
 }
 
 // MakePodder is the constructor for a default Podder
@@ -119,6 +119,16 @@ func (p *podder) faceHandler(w http.ResponseWriter, r *http.Request) {
 		case "achoo":
 			// This Podder is infected now
 			fmt.Fprintf(w, "eww\n")
+
+			// check if already infected
+			p.iMux.Lock()
+			if p.infected {
+				p.iMux.Unlock()
+				return
+			}
+			p.infected = true
+			p.iMux.Unlock()
+
 			go func() {
 				time.Sleep(p.symptomDelay)
 				go p.InfectionFrenzy()
@@ -140,16 +150,6 @@ func (p *podder) faceHandler(w http.ResponseWriter, r *http.Request) {
 // InfectionFrenzy makes the Podder respond negatively to Kubernetes
 // liveness probes and begins sneezing at other Podders
 func (p *podder) InfectionFrenzy() {
-	// check if can go on frenzying
-	p.fMu.Lock()
-	if p.frenzying {
-		// already frenzying
-		p.fMu.Unlock()
-		return
-	}
-	p.frenzying = true
-	p.fMu.Unlock()
-
 	log.Println("sniff")
 	// wait for the http server to reply
 	if p.symptomDelay < 100*time.Millisecond {
